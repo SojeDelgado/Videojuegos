@@ -3,9 +3,11 @@ package mygame;
 import com.jme3.asset.AssetManager;
 import com.jme3.bullet.collision.shapes.CapsuleCollisionShape;
 import com.jme3.bullet.control.CharacterControl;
+import com.jme3.math.FastMath;
 import com.jme3.math.Vector3f;
 import com.jme3.scene.Spatial;
 import java.util.List;
+
 
 public class Enemy {
     private final CharacterControl enemyControl;
@@ -13,20 +15,21 @@ public class Enemy {
     private final Spatial model; // Modelo visual del enemigo
     private Vector3f playerLocation;
     private final float speed = 0.3f; // Velocidad del enemigo
+    private final SceneInitializer sceneInitializer;
 
 
-    public Enemy(AssetManager assetManager, float par, Vector3f playerLocation) {
-        CapsuleCollisionShape capsuleShape = new CapsuleCollisionShape(1.5f, 6f, 1);
+    public Enemy(AssetManager assetManager, float par, Vector3f playerLocation, SceneInitializer sceneInitializer) {
+        this.sceneInitializer = sceneInitializer;
+        CapsuleCollisionShape capsuleShape = new CapsuleCollisionShape(1.5f, 0, 1);
         enemyControl = new CharacterControl(capsuleShape, 0.05f);
         enemyControl.setJumpSpeed(20);
         enemyControl.setFallSpeed(30);
         enemyControl.setGravity(30);
         
 
-        model = assetManager.loadModel("Models/Oto/OtoOldAnim.j3o"); // Cargar el modelo
+        model = assetManager.loadModel("models/enemigo1/enemigo1.j3o"); // Cargar el modelo
+        model.setLocalScale(0.3f); // Ajustar el tamaño del modelo
         model.addControl(enemyControl); // Agregar el control de personaje al modelo
-        
-        
 
         if (playerLocation != null) {
             this.playerLocation = new Vector3f(playerLocation); // Crear una nueva copia de playerLocation
@@ -37,7 +40,8 @@ public class Enemy {
             float angle = (float)Math.random() * 2 * (float)Math.PI; // Generar un ángulo aleatorio
             float x = playerLocation.x + distance * (float)Math.cos(angle);
             float z = playerLocation.z + distance * (float)Math.sin(angle);
-            enemyControl.setPhysicsLocation(new Vector3f(x, 10, z)); // Posición aleatoria a una distancia del jugador
+            float y = sceneInitializer.getTerrainHeight(x, z);
+            enemyControl.setPhysicsLocation(new Vector3f(x, y, z)); // Posición aleatoria a una distancia del jugador
         } else {
             enemyControl.setPhysicsLocation(new Vector3f((float)(Math.random()*50-25), 10, (float)(Math.random()*50-25))); // Posición aleatoria
         }
@@ -50,6 +54,9 @@ public class Enemy {
 
             // Calcular la dirección hacia el jugador
             Vector3f directionToPlayer = playerLocation.subtract(enemyControl.getPhysicsLocation()).normalizeLocal();
+            
+            model.lookAt(playerLocation, Vector3f.UNIT_Y);
+            model.rotate(-FastMath.HALF_PI, 0, 0); // Rotar el modelo 90 grados alrededor del eje X
 
             // Calcular la dirección de separación de otros enemigos
             Vector3f separation = new Vector3f();

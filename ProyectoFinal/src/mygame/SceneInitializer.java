@@ -10,8 +10,10 @@ import com.jme3.bullet.BulletAppState;
 import com.jme3.bullet.collision.shapes.CollisionShape;
 import com.jme3.bullet.control.RigidBodyControl;
 import com.jme3.bullet.util.CollisionShapeFactory;
+import com.jme3.collision.CollisionResults;
 import com.jme3.light.DirectionalLight;
 import com.jme3.math.ColorRGBA;
+import com.jme3.math.Ray;
 import com.jme3.math.Vector3f;
 import com.jme3.post.FilterPostProcessor;
 import com.jme3.post.filters.FogFilter;
@@ -28,6 +30,8 @@ public class SceneInitializer {
     private final Node rootNode;
     private final BulletAppState bulletAppState;
     private final ViewPort viewPort;
+    private Spatial sceneGeo;
+    
 
     public SceneInitializer(AssetManager assetManager, Node rootNode, BulletAppState bulletAppState, ViewPort viewPort) {
         this.assetManager = assetManager;
@@ -40,7 +44,7 @@ public class SceneInitializer {
         
         // We load the scene from the zip file and adjust its size.
         assetManager.registerLocator("town.zip", ZipLocator.class);
-        Spatial sceneGeo = assetManager.loadModel("main.scene");
+        sceneGeo = assetManager.loadModel("main.scene");
         sceneGeo.setLocalScale(2f);
         sceneGeo.setLocalTranslation(0, -1, 0);
         rootNode.attachChild(sceneGeo);
@@ -73,5 +77,24 @@ public class SceneInitializer {
         DirectionalLight dl = new DirectionalLight();
         dl.setDirection(new Vector3f(1f, -1f, -1f));
         rootNode.addLight(dl);
+    }
+    
+    public float getTerrainHeight(float x, float z) {
+        Vector3f origin = new Vector3f(x, 1000, z); // Punto de inicio del rayo (desde arriba)
+        Vector3f direction = new Vector3f(0, -1, 0); // Dirección del rayo (hacia abajo)
+
+        Ray ray = new Ray(origin, direction);
+        CollisionResults results = new CollisionResults();
+
+        // Dispara el rayo
+        sceneGeo.collideWith(ray, results);
+
+        // Si hay un resultado, devuelve la altura del primer punto de colisión
+        if (results.size() > 0) {
+            return results.getClosestCollision().getContactPoint().y;
+        } else {
+            // Si no hay resultados, devuelve un valor predeterminado
+            return 0;
+        }
     }
 }

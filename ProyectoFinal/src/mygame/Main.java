@@ -45,7 +45,7 @@ public class Main extends SimpleApplication implements ActionListener{
         Vector3f playerLocation = player.getPhysicsLocation();
         if (playerLocation != null) { // Verificar si la ubicación del jugador es null
             for (int i = 0; i < 10; i++) { // Crear 10 enemigos
-                Enemy enemy = new Enemy(assetManager, 0.1f, playerLocation); // Pasar la ubicación del jugador
+                Enemy enemy = new Enemy(assetManager, 0.1f, playerLocation, sceneInitializer); // Pasar la ubicación del jugador
                 enemies.add(enemy);
                 bulletAppState.getPhysicsSpace().add(enemy.getControl());
                 rootNode.attachChild(enemy.getModel()); // Agregar el modelo del enemigo a la escena
