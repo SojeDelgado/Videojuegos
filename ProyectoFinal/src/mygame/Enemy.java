@@ -8,7 +8,6 @@ import com.jme3.math.Vector3f;
 import com.jme3.scene.Spatial;
 import java.util.List;
 
-
 public class Enemy {
     private final CharacterControl enemyControl;
     private final Vector3f walkDirection = new Vector3f();
@@ -16,7 +15,8 @@ public class Enemy {
     private Vector3f playerLocation;
     private final float speed = 0.3f; // Velocidad del enemigo
     private final SceneInitializer sceneInitializer;
-
+    private int hits = 0;
+    private boolean markedForRemoval = false;
 
     public Enemy(AssetManager assetManager, float par, Vector3f playerLocation, SceneInitializer sceneInitializer) {
         this.sceneInitializer = sceneInitializer;
@@ -25,9 +25,8 @@ public class Enemy {
         enemyControl.setJumpSpeed(20);
         enemyControl.setFallSpeed(30);
         enemyControl.setGravity(30);
-        
 
-        model = assetManager.loadModel("models/enemigo1/enemigo1.j3o"); // Cargar el modelo
+        model = assetManager.loadModel("Models/enemigo1/enemigo1.j3o"); // Cargar el modelo
         model.setLocalScale(0.3f); // Ajustar el tamaño del modelo
         model.addControl(enemyControl); // Agregar el control de personaje al modelo
 
@@ -41,12 +40,11 @@ public class Enemy {
             float x = playerLocation.x + distance * (float)Math.cos(angle);
             float z = playerLocation.z + distance * (float)Math.sin(angle);
             float y = sceneInitializer.getTerrainHeight(x, z);
-            enemyControl.setPhysicsLocation(new Vector3f(x, y, z)); // Posición aleatoria a una distancia del jugador
+            enemyControl.setPhysicsLocation(new Vector3f(x, y + 5, z)); // Posición aleatoria a una distancia del jugador
         } else {
             enemyControl.setPhysicsLocation(new Vector3f((float)(Math.random()*50-25), 10, (float)(Math.random()*50-25))); // Posición aleatoria
         }
     }
-
 
     public void update(Vector3f playerLocation, List<Enemy> enemies) {
         if (playerLocation != null) {
@@ -84,5 +82,21 @@ public class Enemy {
 
     public Spatial getModel() {
         return model;
+    }
+
+    public void incrementHits() {
+        hits++;
+    }
+
+    public int getHits() {
+        return hits;
+    }
+
+    public void markForRemoval() {
+        markedForRemoval = true;
+    }
+
+    public boolean isMarkedForRemoval() {
+        return markedForRemoval;
     }
 }
