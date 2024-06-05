@@ -39,4 +39,3 @@ public class Crosshair extends BaseAppState {
         crosshair.setCullHint(BitmapText.CullHint.Always);
     }
 }
-

@@ -17,17 +17,31 @@ public class Enemy {
     private final SceneInitializer sceneInitializer;
     private int hits = 0;
     private boolean markedForRemoval = false;
+    private final int clicksToDestroy; // Número de clics necesarios para eliminar al enemigo
 
-    public Enemy(AssetManager assetManager, float par, Vector3f playerLocation, SceneInitializer sceneInitializer) {
+    public Enemy(AssetManager assetManager, float par, Vector3f playerLocation, SceneInitializer sceneInitializer, int clicksToDestroy) {
         this.sceneInitializer = sceneInitializer;
+        this.clicksToDestroy = clicksToDestroy;
         CapsuleCollisionShape capsuleShape = new CapsuleCollisionShape(1.5f, 0, 1);
         enemyControl = new CharacterControl(capsuleShape, 0.05f);
         enemyControl.setJumpSpeed(20);
         enemyControl.setFallSpeed(30);
         enemyControl.setGravity(30);
 
-        model = assetManager.loadModel("Models/enemigo1/enemigo1.j3o"); // Cargar el modelo
-        model.setLocalScale(0.3f); // Ajustar el tamaño del modelo
+        if (clicksToDestroy == 3) {
+            model = assetManager.loadModel("models/enemigo1/enemigo1.j3o");
+            model.setLocalScale(0.3f); // Ajustar el tamaño del modelo
+        } else if (clicksToDestroy == 5) {
+            model = assetManager.loadModel("models/enemigo2/Ene.j3o");
+            model.setLocalScale(0.8f); // Ajustar el tamaño del modelo
+        } else if (clicksToDestroy == 15) {
+            model = assetManager.loadModel("Models/Oto/OtoOldAnim.j3o");
+            model.setLocalScale(2.0f); // Ajustar el tamaño del modelo
+        } else {
+            // Si se proporciona un número de clics desconocido, se usa un modelo predeterminado
+            model = assetManager.loadModel("models/enemigo1/enemigo1.j3o");
+            model.setLocalScale(0.3f); // Ajustar el tamaño del modelo
+        }
         model.addControl(enemyControl); // Agregar el control de personaje al modelo
 
         if (playerLocation != null) {
@@ -52,7 +66,7 @@ public class Enemy {
 
             // Calcular la dirección hacia el jugador
             Vector3f directionToPlayer = playerLocation.subtract(enemyControl.getPhysicsLocation()).normalizeLocal();
-            
+
             model.lookAt(playerLocation, Vector3f.UNIT_Y);
             model.rotate(-FastMath.HALF_PI, 0, 0); // Rotar el modelo 90 grados alrededor del eje X
 
@@ -73,6 +87,12 @@ public class Enemy {
 
             walkDirection.set(finalDirection).multLocal(speed);
             enemyControl.setWalkDirection(walkDirection);
+
+            // Verificar si el enemigo ha caído fuera del mapa
+            if (enemyControl.getPhysicsLocation().y < 0) { // Ajusta el valor '0' al nivel más bajo de tu mapa
+                // Marcar el enemigo para su eliminación
+                markForRemoval();
+            }
         }
     }
 
@@ -98,5 +118,9 @@ public class Enemy {
 
     public boolean isMarkedForRemoval() {
         return markedForRemoval;
+    }
+
+    public int getClicksToDestroy() {
+        return clicksToDestroy;
     }
 }
