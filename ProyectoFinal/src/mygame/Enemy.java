@@ -36,11 +36,11 @@ public class Enemy {
         enemyControl.setGravity(30);
 
         if (clicksToDestroy == 3) {
+            model = assetManager.loadModel("Models/enemigo2/Ene.j3o");
+            model.setLocalScale(0.9f); // Ajustar el tamaño del modelo
+        } else if (clicksToDestroy == 5) {
             model = assetManager.loadModel("Models/enemigo1/enemigo1.j3o");
             model.setLocalScale(0.3f); // Ajustar el tamaño del modelo
-        } else if (clicksToDestroy == 5) {
-            model = assetManager.loadModel("Models/enemigo2/Ene.j3o");
-            model.setLocalScale(0.8f); // Ajustar el tamaño del modelo
         } else if (clicksToDestroy == 15) {
             model = assetManager.loadModel("Models/Oto/OtoOldAnim.j3o");
             model.setLocalScale(2.0f); // Ajustar el tamaño del modelo
