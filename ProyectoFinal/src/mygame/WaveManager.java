@@ -19,13 +19,15 @@ public class WaveManager extends BaseAppState {
     private final Vector3f playerLocation;
     private final SceneInitializer sceneInitializer;
     private BitmapText enemyCounterText;
+    private final SoundManager soundManager;
 
-    public WaveManager(SimpleApplication app, BulletAppState bulletAppState, List<Enemy> enemies, Vector3f playerLocation, SceneInitializer sceneInitializer) {
+    public WaveManager(SimpleApplication app, BulletAppState bulletAppState, List<Enemy> enemies, Vector3f playerLocation, SceneInitializer sceneInitializer, SoundManager soundManager) {
         this.app = app;
         this.bulletAppState = bulletAppState;
         this.enemies = enemies;
         this.playerLocation = playerLocation;
         this.sceneInitializer = sceneInitializer;
+        this.soundManager = soundManager;
     }
 
     @Override
@@ -72,25 +74,25 @@ public class WaveManager extends BaseAppState {
             for (int i = 0; i < numEnemies; i++) {
                 if (currentWave == 0) {
                     // Crear enemigos que requieran 3 clics para ser eliminados
-                    Enemy enemy = new Enemy(app.getAssetManager(), 0.1f, playerLocation, sceneInitializer, 3);
+                    Enemy enemy = new Enemy(app.getAssetManager(), 0.1f, playerLocation, sceneInitializer, 3, soundManager);
                     enemies.add(enemy);
                 } else if (currentWave == 1) {
                     // Crear enemigos que requieran 5 clics para ser eliminados
-                    Enemy enemy = new Enemy(app.getAssetManager(), 0.1f, playerLocation, sceneInitializer, 5);
+                    Enemy enemy = new Enemy(app.getAssetManager(), 0.1f, playerLocation, sceneInitializer, 5, soundManager);
                     enemies.add(enemy);
                 } else if (currentWave == 2) {
                     // Crear enemigos que requieran 3 clics para ser eliminados
-                    Enemy enemy1 = new Enemy(app.getAssetManager(), 0.1f, playerLocation, sceneInitializer, 3);
+                    Enemy enemy1 = new Enemy(app.getAssetManager(), 0.1f, playerLocation, sceneInitializer, 3, soundManager);
                     enemies.add(enemy1);
                     // Crear enemigos que requieran 5 clics para ser eliminados
-                    Enemy enemy2 = new Enemy(app.getAssetManager(), 0.1f, playerLocation, sceneInitializer, 5);
+                    Enemy enemy2 = new Enemy(app.getAssetManager(), 0.1f, playerLocation, sceneInitializer, 5, soundManager);
                     enemies.add(enemy2);
                 }
                 // Agregar más lógica para manejar diferentes tipos de oleadas según sea necesario
             }
             if (currentWave == 2) {
                 // Agregar un enemigo jefe que requiera 15 clics en la tercera oleada
-                Enemy bossEnemy = new Enemy(app.getAssetManager(), 0.1f, playerLocation, sceneInitializer, 15);
+                Enemy bossEnemy = new Enemy(app.getAssetManager(), 0.1f, playerLocation, sceneInitializer, 15, soundManager);
                 enemies.add(bossEnemy);
             }
             currentWave++;

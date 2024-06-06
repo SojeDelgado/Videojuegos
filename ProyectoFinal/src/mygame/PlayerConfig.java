@@ -4,6 +4,7 @@
  */
 package mygame;
 
+import com.jme3.app.SimpleApplication;
 import com.jme3.bullet.collision.shapes.CapsuleCollisionShape;
 import com.jme3.bullet.control.CharacterControl;
 import com.jme3.input.InputManager;
@@ -28,11 +29,22 @@ public class PlayerConfig {
     private final Camera cam;
     private final InputManager inputManager;
     private final ActionListener actionListener;
+    private final SoundManager soundManager;
+    private float footstepTimer = 0.0f;
+    private float footstepInterval = 0.4f;
+    
+    private final SimpleApplication app;
+    
+    // Vida del Jugador
+    private int playerHealth = 100;
 
-    public PlayerConfig(Camera cam, InputManager inputManager, ActionListener actionListener) {
+    public PlayerConfig(Camera cam, InputManager inputManager, ActionListener actionListener, SoundManager soundManager, SimpleApplication app) {
         this.cam = cam;
         this.inputManager = inputManager;
         this.actionListener = actionListener;
+        this.soundManager = soundManager;
+        this.app = app;
+        
         CapsuleCollisionShape capsuleShape = new CapsuleCollisionShape(1.5f, 6f, 1);
         player = new CharacterControl(capsuleShape, 0.05f);
         player.setJumpSpeed(20);
@@ -40,6 +52,19 @@ public class PlayerConfig {
         player.setGravity(30);
         player.setPhysicsLocation(new Vector3f(0, 10, 0));
         setUpKeys();
+    }
+    
+    public int getPlayerHealth() {
+        return playerHealth;
+    }
+    
+    public void reducePlayerHealth(int amount) {
+        playerHealth -= amount;
+        if (playerHealth <= 0) {
+            // El jugador ha muerto, puedes agregar aquí cualquier lógica adicional
+            System.out.println("Game Over");
+            app.stop();
+        }
     }
 
     public void setLeft(boolean left) {
@@ -106,6 +131,16 @@ public class PlayerConfig {
         }
         player.setWalkDirection(walkDirection);
         cam.setLocation(player.getPhysicsLocation());
+        
+        // El jugador está caminando
+        if (left || right || up || down) {
+            footstepTimer += tpf;
+        
+            if (footstepTimer >= footstepInterval) {
+                soundManager.playFootstepsSound(); // Reproducir sonido de pisadas
+                footstepTimer = 0.0f; // Reiniciar el temporizador
+            }
+        }
     }
     
     public CharacterControl getPlayer() {

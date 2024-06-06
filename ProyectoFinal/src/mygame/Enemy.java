@@ -18,10 +18,17 @@ public class Enemy {
     private int hits = 0;
     private boolean markedForRemoval = false;
     private final int clicksToDestroy; // Número de clics necesarios para eliminar al enemigo
+    
+    private final int damage = 10; // Daño que hace al jugador
+    private float attackCooldown = 1.0f; // Tiempo de cooldown entre golpes en segundos
+    private float timeSinceLastAttack = 0.0f; // Tiempo transcurrido desde el último golpe
+    private final SoundManager soundManager;
 
-    public Enemy(AssetManager assetManager, float par, Vector3f playerLocation, SceneInitializer sceneInitializer, int clicksToDestroy) {
+    public Enemy(AssetManager assetManager, float par, Vector3f playerLocation, SceneInitializer sceneInitializer, int clicksToDestroy, SoundManager soundManager) {
         this.sceneInitializer = sceneInitializer;
         this.clicksToDestroy = clicksToDestroy;
+        this.soundManager = soundManager;
+        
         CapsuleCollisionShape capsuleShape = new CapsuleCollisionShape(1.5f, 0, 1);
         enemyControl = new CharacterControl(capsuleShape, 0.05f);
         enemyControl.setJumpSpeed(20);
@@ -29,17 +36,17 @@ public class Enemy {
         enemyControl.setGravity(30);
 
         if (clicksToDestroy == 3) {
-            model = assetManager.loadModel("models/enemigo1/enemigo1.j3o");
+            model = assetManager.loadModel("Models/enemigo1/enemigo1.j3o");
             model.setLocalScale(0.3f); // Ajustar el tamaño del modelo
         } else if (clicksToDestroy == 5) {
-            model = assetManager.loadModel("models/enemigo2/Ene.j3o");
+            model = assetManager.loadModel("Models/enemigo2/Ene.j3o");
             model.setLocalScale(0.8f); // Ajustar el tamaño del modelo
         } else if (clicksToDestroy == 15) {
             model = assetManager.loadModel("Models/Oto/OtoOldAnim.j3o");
             model.setLocalScale(2.0f); // Ajustar el tamaño del modelo
         } else {
             // Si se proporciona un número de clics desconocido, se usa un modelo predeterminado
-            model = assetManager.loadModel("models/enemigo1/enemigo1.j3o");
+            model = assetManager.loadModel("Models/enemigo1/enemigo1.j3o");
             model.setLocalScale(0.3f); // Ajustar el tamaño del modelo
         }
         model.addControl(enemyControl); // Agregar el control de personaje al modelo
@@ -60,12 +67,26 @@ public class Enemy {
         }
     }
 
-    public void update(Vector3f playerLocation, List<Enemy> enemies) {
+    public void update(float tpf, Vector3f playerLocation, List<Enemy> enemies, PlayerConfig player) {
         if (playerLocation != null) {
             this.playerLocation = new Vector3f(playerLocation); // Actualizar la ubicación del jugador
 
             // Calcular la dirección hacia el jugador
             Vector3f directionToPlayer = playerLocation.subtract(enemyControl.getPhysicsLocation()).normalizeLocal();
+            
+            // Actualiza el tiempo transcurrido desde el último golpe
+            timeSinceLastAttack += tpf;
+            
+            // Detecta la distancia entre el enemigo y el jugador
+            float distanceToPlayer = enemyControl.getPhysicsLocation().distance(playerLocation);
+            
+            // Si el enemigo está lo suficientemente cerca del jugador, golpéalo
+             if (distanceToPlayer < 2.0f && timeSinceLastAttack >= attackCooldown) { 
+                // Reduce la vida del jugador
+                player.reducePlayerHealth(damage);
+                soundManager.playRandomHitSound();
+                timeSinceLastAttack = 0.0f;
+            }
 
             model.lookAt(playerLocation, Vector3f.UNIT_Y);
             model.rotate(-FastMath.HALF_PI, 0, 0); // Rotar el modelo 90 grados alrededor del eje X

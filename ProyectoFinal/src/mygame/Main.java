@@ -12,6 +12,7 @@ import com.jme3.scene.Node;
 import com.jme3.collision.CollisionResults;
 import com.jme3.font.BitmapFont;
 import com.jme3.font.BitmapText;
+import com.jme3.math.ColorRGBA;
 import com.jme3.math.FastMath;
 
 import java.util.ArrayList;
@@ -39,6 +40,11 @@ public class Main extends SimpleApplication implements ActionListener {
     private final Random random = new Random();
     private final Vector3f minSpawnBounds = new Vector3f(-50, 0, -50); // Limites mínimos de aparición
     private final Vector3f maxSpawnBounds = new Vector3f(50, 0, 50);   // Limites máximos de aparición
+    
+    private BitmapText playerHealthText;
+
+    private SoundManager soundManager; // Declarar la instancia de SoundManager
+    int wave = 0;
 
     public static void main(String[] args) {
         Main app = new Main();
@@ -47,9 +53,14 @@ public class Main extends SimpleApplication implements ActionListener {
 
     @Override
     public void simpleInitApp() {
+        // Inicializar SoundManager
+        soundManager = new SoundManager(assetManager, rootNode);
+
+        // Reproducir el sonido de inicio
+        soundManager.playStartSound();
         bulletAppState = new BulletAppState();
         stateManager.attach(bulletAppState);
-        playerConfig = new PlayerConfig(cam, inputManager, this);
+        playerConfig = new PlayerConfig(cam, inputManager, this, soundManager, this);
         player = playerConfig.getPlayer();
 
         bulletAppState.getPhysicsSpace().add(player);
@@ -58,10 +69,20 @@ public class Main extends SimpleApplication implements ActionListener {
         sceneInitializer.initializeScene();
         sceneInitializer.initializeFog();
         sceneInitializer.initializeLight();
-
+        
         initCrosshair();
         initEnemyCounter();
         spawnWave();
+        initPlayerHealthText();
+    }
+    
+    private void initPlayerHealthText() {
+        BitmapFont font = assetManager.loadFont("Interface/Fonts/Default.fnt");
+        playerHealthText = new BitmapText(font, false);
+        playerHealthText.setSize(font.getCharSet().getRenderedSize());
+        playerHealthText.setColor(ColorRGBA.White); // Color de la vida del jugador
+        playerHealthText.setLocalTranslation(20, cam.getHeight() - playerHealthText.getLineHeight()*2, 50);
+        guiNode.attachChild(playerHealthText);
     }
 
     private void initCrosshair() {
@@ -83,14 +104,16 @@ public class Main extends SimpleApplication implements ActionListener {
     }
 
     private void spawnWave() {
+        
         if (currentWave >= waveEnemies.length) {
-            // Lógica para manejar la aparición del jefe de 15 clics después de la tercera oleada
+            // Aparición del jefe de 15 clics después de la tercera oleada
             if (currentWave == waveEnemies.length) {
                 enemiesToSpawn = 1; // Solo un enemigo
                 currentWave++;
                 System.out.println("Spawn boss with 15 clicks");
             } else {
                 // No hay más oleadas después del jefe
+                
                 return;
             }
         } else {
@@ -99,6 +122,11 @@ public class Main extends SimpleApplication implements ActionListener {
             System.out.println("Spawn wave " + currentWave + " with " + enemiesToSpawn + " enemies");
         }
         updateEnemyCounter();
+        if (wave > 0){
+            // Reproducir el sonido de cambio de ronda
+            soundManager.playRoundChangeSound();
+        }
+        wave ++;
     }
 
     private void spawnEnemy() {
@@ -107,20 +135,20 @@ public class Main extends SimpleApplication implements ActionListener {
 
         // Determinar qué tipo de enemigo generar en función de la oleada actual
         if (currentWave <= 1) {
-            enemy = new Enemy(assetManager, 0.1f, player.getPhysicsLocation(), sceneInitializer, 3);
+            enemy = new Enemy(assetManager, 0.1f, player.getPhysicsLocation(), sceneInitializer, 3, soundManager);
         } else if (currentWave == 2) {
-            enemy = new Enemy(assetManager, 0.1f, player.getPhysicsLocation(), sceneInitializer, 5);
+            enemy = new Enemy(assetManager, 0.1f, player.getPhysicsLocation(), sceneInitializer, 5, soundManager);
         } else if (currentWave == 3) {
             // Mezclar enemigos de diferentes tipos en la tercera oleada
             int randomNumber = FastMath.nextRandomInt(0, 1); // 0 o 1
             if (randomNumber == 0) {
-                enemy = new Enemy(assetManager, 0.1f, player.getPhysicsLocation(), sceneInitializer, 3);
+                enemy = new Enemy(assetManager, 0.1f, player.getPhysicsLocation(), sceneInitializer, 3, soundManager);
             } else {
-                enemy = new Enemy(assetManager, 0.1f, player.getPhysicsLocation(), sceneInitializer, 5);
+                enemy = new Enemy(assetManager, 0.1f, player.getPhysicsLocation(), sceneInitializer, 5, soundManager);
             }
         } else {
             // En oleadas posteriores, generar solo el enemigo jefe que requiere 15 clics
-            enemy = new Enemy(assetManager, 0.1f, player.getPhysicsLocation(), sceneInitializer, 15);
+            enemy = new Enemy(assetManager, 0.1f, player.getPhysicsLocation(), sceneInitializer, 15, soundManager);
         }
 
         enemies.add(enemy);
@@ -149,10 +177,9 @@ public class Main extends SimpleApplication implements ActionListener {
     }
 
     private boolean isLocationValid(Vector3f location) {
-        // Aquí puedes agregar las verificaciones necesarias para asegurar que la ubicación es válida.
-        // Por ejemplo, puedes verificar que no esté dentro de edificios u otros objetos.
+        // Verificar que no esté dentro de edificios u otros objetos.
 
-        // En este caso, simplemente verificamos que la posición y no esté fuera de los límites del terreno
+        // Verificamos que la posición y no esté fuera de los límites del terreno
         return location.x >= minSpawnBounds.x && location.x <= maxSpawnBounds.x
                 && location.z >= minSpawnBounds.z && location.z <= maxSpawnBounds.z
                 && location.y >= minSpawnBounds.y && location.y <= maxSpawnBounds.y;
@@ -161,10 +188,12 @@ public class Main extends SimpleApplication implements ActionListener {
     @Override
     public void simpleUpdate(float tpf) {
         playerConfig.simpleUpdate(tpf);
+        
+        updatePlayerHealthText();
 
         // Actualizar enemigos
         for (Enemy enemy : enemies) {
-            enemy.update(player.getPhysicsLocation(), enemies);
+            enemy.update(tpf, player.getPhysicsLocation(), enemies, playerConfig);
         }
 
         // Eliminar enemigos marcados
@@ -178,9 +207,9 @@ public class Main extends SimpleApplication implements ActionListener {
             }
         }
         updateEnemyCounter();
-
+        
         // Generar nueva oleada si todos los enemigos fueron eliminados
-        if (enemies.isEmpty() && enemiesToSpawn == 0) {
+        if (enemies.isEmpty() && enemiesToSpawn == 0) {    
             timeSinceLastWave += tpf;
             if (timeSinceLastWave >= waveInterval) {
                 spawnWave();
@@ -198,6 +227,13 @@ public class Main extends SimpleApplication implements ActionListener {
                 System.out.println("Enemies to spawn: " + enemiesToSpawn);
             }
         }
+    }
+    
+    private void updatePlayerHealthText() {
+        // Obtén la vida actual del jugador (puedes acceder a ella desde el objeto PlayerConfig)
+        int playerHealth = playerConfig.getPlayerHealth();
+        // Actualiza el texto de la vida del jugador
+        playerHealthText.setText("Vida del jugador: " + playerHealth);
     }
 
     @Override
@@ -239,11 +275,17 @@ public class Main extends SimpleApplication implements ActionListener {
             enemy.getModel().collideWith(ray, results);
             if (results.size() > 0) {
                 enemy.incrementHits();
-                if (enemy.getHits() >= enemy.getClicksToDestroy()) { // Usar el método getter aquí
+                // Reproducir el sonido de impacto usando SoundManager
+                soundManager.playHitSound();
+                
+                if (enemy.getHits() >= enemy.getClicksToDestroy()) {
                     enemy.markForRemoval();
                 }
                 break;
             }
         }
+
+        // Reproducir el sonido de disparo
+        soundManager.playShootSound();
     }
 }
